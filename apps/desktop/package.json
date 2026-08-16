@@ -1,0 +1,15 @@
+{
+  "name": "@deepseek-ai/dsh-desktop",
+  "description": "Electron launcher for the DeepSeek Harness web profile.",
+  "version": "0.1.0-rc.5",
+  "private": true,
+  "type": "module",
+  "main": "src/main.mjs",
+  "scripts": {
+    "start": "electron ."
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^43.4.0"
+  }
+}

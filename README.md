@@ -2,9 +2,31 @@
 
 English | [中文](README.zh.md)
 
+> This public repository is an unofficial desktop-launcher fork of
+> [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness).
+> The upstream project is still the source for the harness itself.
+
 DeepSeek Harness (`dsh`) is an open-source agent harness developed by [DeepSeek AI](https://deepseek.com).
 
 It uses an architecture where **everything is a plugin**, and is powered by [Cordis](https://github.com/cordiverse/cordis), whose design is described in [_A Programming Paradigm for Spatiotemporal Composability_](https://github.com/cordiverse/paper).
+
+## Difference from the original project
+
+This fork keeps the original DeepSeek Harness source intact and adds a local
+Electron launcher so the Web UI can be opened as a desktop app instead of
+copying a browser URL manually.
+
+Added pieces:
+
+- `apps/desktop`: a small Electron wrapper that starts `dsh web --port 0`,
+  waits for the local URL printed by the harness, and loads it in a native
+  desktop window.
+- `pnpm dsh:desktop`: root-level shortcut for launching the Electron app.
+- `apps/desktop/run-desktop.sh`: Linux desktop-entry helper used by local
+  `.desktop` launchers.
+
+The Electron launcher still uses the upstream Web UI and backend. It does not
+replace the DeepSeek Harness runtime or evaluation logic.
 
 ## Developer preview
 
@@ -32,6 +54,12 @@ cd deepseek-harness
 pnpm install
 pnpm run build
 pnpm dsh web
+```
+
+To open this fork as a desktop app:
+
+```sh
+pnpm dsh:desktop
 ```
 
 ## Community and support

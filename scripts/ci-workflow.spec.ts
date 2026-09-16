@@ -235,6 +235,32 @@ describe('E2B e2e workflow', () => {
   })
 })
 
+describe('real DeepSeek API e2e workflow', () => {
+  it('fails before build and tests when the external credential is missing or rejected', () => {
+    const workflow = loadWorkflow('.github/workflows/e2e.yml')
+    if (!isRecord(workflow.jobs) || !isRecord(workflow.jobs.e2e) || !Array.isArray(workflow.jobs.e2e.steps)) {
+      throw new TypeError('Real DeepSeek e2e workflow must define the e2e job steps')
+    }
+
+    const steps = workflow.jobs.e2e.steps.filter(isRecord)
+    const preflightIndex = steps.findIndex(step => step.name === 'Preflight (require valid DEEPSEEK_API_KEY)')
+    const buildIndex = steps.findIndex(step => step.name === 'Build (lib for the e2e example bins)')
+    const e2eIndex = steps.findIndex(step => step.name === 'E2E tests (real DeepSeek API)')
+    const preflight = steps[preflightIndex]
+
+    expect(preflightIndex).toBeGreaterThanOrEqual(0)
+    expect(buildIndex).toBeGreaterThan(preflightIndex)
+    expect(e2eIndex).toBeGreaterThan(buildIndex)
+    expect(preflight).toMatchObject({
+      env: { DEEPSEEK_API_KEY: '${{ secrets.DEEPSEEK_API_KEY_EXTERNAL }}' },
+    })
+    expect(preflight?.run).toContain('DEEPSEEK_API_KEY is empty')
+    expect(preflight?.run).toContain('https://api.deepseek.com/models')
+    expect(preflight?.run).toContain('401|403')
+    expect(preflight?.run).toContain('Rotate the repository secret')
+  })
+})
+
 describe('Python release workflows', () => {
   it('keeps complete wheel validation separate from protected public publication', () => {
     const workflow = loadWorkflow('.github/workflows/python-release.yml')

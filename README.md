@@ -62,6 +62,8 @@ To open this fork as a desktop app:
 pnpm dsh:desktop
 ```
 
+The Linux `.desktop` launcher uses [`apps/desktop/run-desktop.sh`](apps/desktop/run-desktop.sh), which automatically runs `pnpm run build:web` when `apps/web/dist/index.html` is missing and reuses an existing Web build; direct `pnpm dsh:desktop` does not perform this preflight.
+
 ## Community and support
 
 - Feel free to submit feedback or bug reports through [GitHub Discussions](https://github.com/deepseek-ai/deepseek-harness/discussions).

@@ -12,9 +12,9 @@ Source modules reached through tsx and browser modules reached through built bun
 
 ## Decision
 
-The root `dsh` script only runs `node --import tsx/esm apps/cli/src/bin.ts`. `pnpm run build` remains the separate operation that generates package and frontend artifacts. Source users run the build before the first production-like launch and whenever frontend or client-plugin artifacts need refreshing.
+The root `dsh` script only runs `node --import tsx/esm apps/cli/src/bin.ts`. `pnpm run build` remains the separate operation that generates package and frontend artifacts. Source users run the build before the first production-like launch and whenever frontend or client-plugin artifacts need refreshing. The Linux desktop launcher adds a narrower recovery path: it checks `apps/web/dist/index.html`, runs `pnpm run build:web` only when that entry is absent, and reuses an existing Web build.
 
-Missing Typert host artifacts fail profile boot through module-resolution errors without a build instruction. Once those host artifacts exist, missing frontend and client-plugin artifacts fail at startup with diagnostics that direct the user to `pnpm run build`. The launcher does not validate artifact freshness: existing stale frontend or client-plugin bundles are accepted and can run older browser code until the next build. After package Node halves have been built once, `pnpm run dev:web` rebuilds only packages that declare `dsh.client`; it keeps client-plugin bundles current and activates their hot-reload path, but does not rebuild the frontend shell.
+Missing Typert host artifacts fail profile boot through module-resolution errors without a build instruction. Once those host artifacts exist, missing frontend and client-plugin artifacts in direct source launches fail at startup with diagnostics that direct the user to `pnpm run build`. The Linux desktop launcher validates that `pnpm run build:web` produced the frontend entry before starting Electron; on a failed build or still-missing output, it logs the failure, notifies when desktop notifications are available, and exits without launching. It does not validate artifact freshness: an existing stale frontend entry and stale client-plugin bundles are accepted and can run older browser code until the next build. After package Node halves have been built once, `pnpm run dev:web` rebuilds only packages that declare `dsh.client`; it keeps client-plugin bundles current and activates their hot-reload path, but does not rebuild the frontend shell.
 
 This decision owns build scheduling only. The [tsx ESM source-launch decision](../architecture/2026-07-29-dsh-source-launch-tsx-esm.md) owns TypeScript transformation and workspace resolution, the [source-run decision](2026-08-10-source-run-without-managed-installer.md) owns repository scripts as the supported checkout entry points, and the [personal-config decision](../feature/2026-07-20-dsh-cli-personal-config.md) owns the machine-level configuration layer.
 
@@ -29,10 +29,11 @@ This decision owns build scheduling only. The [tsx ESM source-launch decision](.
 ## Consequences
 
 - Repeated source launches do not wait for a complete repository build, and build output is not mixed with CLI output.
-- Source users own artifact freshness. Missing artifacts stop startup, but only frontend and client-plugin failures direct users to `pnpm run build`; existing stale frontend and client-plugin bundles can silently serve older browser code.
+- Source users own artifact freshness. Direct launches still stop on missing artifacts, but the Linux desktop launcher recovers a missing frontend entry with `pnpm run build:web` and stops before Electron when that recovery fails or produces no entry.
+- Existing frontend and client-plugin artifacts are not freshness-checked and can silently serve older browser code.
 - TUI, Web, and headless selection, argument forwarding, environment inheritance, and the tsx ESM launch vector remain unchanged.
-- The root onboarding and CLI reference show build and launch as separate commands and document the stale-artifact behavior.
+- The CLI reference shows build and direct launch as separate commands and documents the stale-artifact behavior. The root README onboarding additionally identifies the Linux desktop launcher's missing-entry recovery.
 
 ## Verification
 
-`apps/cli/tests/source-launch.compat.spec.ts` pins the exact root package command and exercises the production source-launch vector. `packages/bundle/web-app/tests/web-app.spec.ts` and `packages/client/modules/tests/node-half.client.spec.ts` pin the missing-artifact diagnostics.
+`apps/cli/tests/source-launch.compat.spec.ts` pins the exact root package command and exercises the production source-launch vector. `packages/bundle/web-app/tests/web-app.spec.ts` and `packages/client/modules/tests/node-half.client.spec.ts` pin the direct-launch missing-artifact diagnostics. `apps/desktop/tests/run-desktop.spec.ts` pins the Linux launcher paths for an existing entry, successful recovery, build failure, and a successful build with missing output. The real launcher smoke removes only `apps/web/dist/index.html`, starts `apps/desktop/run-desktop.sh`, and requires the entry to be rebuilt and the resulting local Web URL to return HTTP 200.

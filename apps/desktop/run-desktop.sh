@@ -23,4 +23,28 @@ if ! command -v pnpm >/dev/null 2>&1; then
 fi
 
 cd "$(dirname "$0")/../.."
+
+web_dist_entry='apps/web/dist/index.html'
+if [ ! -f "$web_dist_entry" ]; then
+  echo "[$(date --iso-8601=seconds)] web frontend missing; running pnpm run build:web"
+  if pnpm run build:web; then
+    if [ ! -f "$web_dist_entry" ]; then
+      message="Web frontend build completed, but $web_dist_entry is still missing. See $LOG_DIR/launcher.log"
+      echo "[$(date --iso-8601=seconds)] $message"
+      if command -v notify-send >/dev/null 2>&1; then
+        notify-send "DeepSeek Harness" "$message" || true
+      fi
+      exit 1
+    fi
+  else
+    build_status=$?
+    message="Could not build the web frontend (exit $build_status). See $LOG_DIR/launcher.log"
+    echo "[$(date --iso-8601=seconds)] $message"
+    if command -v notify-send >/dev/null 2>&1; then
+      notify-send "DeepSeek Harness" "$message" || true
+    fi
+    exit "$build_status"
+  fi
+fi
+
 exec pnpm dsh:desktop
